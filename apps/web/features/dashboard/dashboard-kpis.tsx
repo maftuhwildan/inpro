@@ -10,31 +10,19 @@ type DashboardKpisProps = {
   loadError?: string
 }
 
-const STATUS_LABELS: Record<ProjectStatus, string> = {
-  PLANNING: 'Planning',
-  ACTIVE: 'Active',
-  ON_HOLD: 'On Hold',
-  COMPLETED: 'Completed',
-  CANCELLED: 'Cancelled',
-}
-
-const STATUS_COLORS: Record<ProjectStatus, string> = {
-  PLANNING: '#6b7280',
-  ACTIVE: '#16a34a',
-  ON_HOLD: '#d97706',
-  COMPLETED: '#2563eb',
-  CANCELLED: '#dc2626',
+const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; badge: string }> = {
+  PLANNING: { label: 'Planning', color: '#71717a', badge: 'badge-default' },
+  ACTIVE: { label: 'Active', color: '#16a34a', badge: 'badge-success' },
+  ON_HOLD: { label: 'On Hold', color: '#d97706', badge: 'badge-warning' },
+  COMPLETED: { label: 'Completed', color: '#2563eb', badge: 'badge-info' },
+  CANCELLED: { label: 'Cancelled', color: '#dc2626', badge: 'badge-danger' },
 }
 
 export function DashboardKpisFeature({ projects, overdueTasks, recentReports, loadError }: DashboardKpisProps) {
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {}
-    for (const status of Object.keys(STATUS_LABELS)) {
-      counts[status] = 0
-    }
-    for (const project of projects) {
-      counts[project.status] = (counts[project.status] ?? 0) + 1
-    }
+    for (const status of Object.keys(STATUS_CONFIG)) counts[status] = 0
+    for (const project of projects) counts[project.status] = (counts[project.status] ?? 0) + 1
     return counts
   }, [projects])
 
@@ -42,144 +30,119 @@ export function DashboardKpisFeature({ projects, overdueTasks, recentReports, lo
 
   function formatDate(dateStr: string): string {
     try {
-      return new Date(dateStr).toLocaleDateString('id-ID', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-      })
-    } catch {
-      return dateStr
-    }
+      return new Date(dateStr).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })
+    } catch { return dateStr }
   }
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      {loadError ? <p style={{ color: '#b42318' }}>{loadError}</p> : null}
+    <div className="stack-lg">
+      {loadError ? <div className="alert alert-error">{loadError}</div> : null}
 
       {/* Widget 1: Project Status Cards */}
       <section>
-        <h2 style={{ marginBottom: 8 }}>Projects by Status</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
-          {(Object.keys(STATUS_LABELS) as ProjectStatus[]).map((status) => (
-            <div
-              key={status}
-              style={{
-                background: '#fff',
-                border: '1px solid #d7dfd9',
-                borderLeft: `4px solid ${STATUS_COLORS[status]}`,
-                padding: 12,
-              }}
-            >
-              <div style={{ fontSize: 24, fontWeight: 700 }}>{statusCounts[status] ?? 0}</div>
-              <div style={{ fontSize: 13, color: '#555' }}>{STATUS_LABELS[status]}</div>
+        <h2 style={{ marginBottom: 12 }}>Projects by Status</h2>
+        <div className="grid-cards">
+          {(Object.keys(STATUS_CONFIG) as ProjectStatus[]).map((status) => (
+            <div key={status} className="card kpi-card" style={{ borderLeftColor: STATUS_CONFIG[status].color }}>
+              <div className="card-content" style={{ padding: '16px 20px' }}>
+                <div className="kpi-value">{statusCounts[status] ?? 0}</div>
+                <div className="kpi-label">{STATUS_CONFIG[status].label}</div>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
       {/* Widget 2: Project Progress */}
-      <section style={{ background: '#fff', border: '1px solid #d7dfd9', padding: 12 }}>
-        <h3 style={{ marginTop: 0 }}>Project Progress</h3>
-        {projects.length === 0 ? (
-          <p style={{ color: '#555' }}>No projects yet</p>
-        ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
-            {projects.map((project) => (
-              <div key={project.id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px', gap: 8, alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{project.name}</div>
-                  <div
-                    style={{
-                      height: 8,
-                      background: '#e5e7eb',
-                      borderRadius: 4,
-                      marginTop: 4,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${project.progress}%`,
-                        background: project.progress === 100 ? '#16a34a' : '#2563eb',
-                        borderRadius: 4,
-                        transition: 'width 0.3s ease',
-                      }}
-                    />
+      <div className="card">
+        <div className="card-header"><h3>Project Progress</h3></div>
+        <div className="card-content">
+          {projects.length === 0 ? (
+            <p style={{ color: 'var(--muted-foreground)' }}>No projects yet</p>
+          ) : (
+            <div className="stack-sm">
+              {projects.map((project) => (
+                <div key={project.id} style={{ display: 'grid', gridTemplateColumns: '1fr 50px', gap: 8, alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{project.name}</div>
+                    <div className="progress-track" style={{ marginTop: 4 }}>
+                      <div
+                        className={`progress-fill ${project.progress === 100 ? 'progress-fill-primary' : 'progress-fill-info'}`}
+                        style={{ width: `${project.progress}%` }}
+                      />
+                    </div>
                   </div>
+                  <div style={{ fontSize: '0.8125rem', textAlign: 'right', color: 'var(--muted-foreground)' }}>{project.progress}%</div>
                 </div>
-                <div style={{ fontSize: 13, textAlign: 'right', color: '#555' }}>{project.progress}%</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Widget 3: Overdue Tasks */}
-      <section style={{ background: '#fff', border: '1px solid #d7dfd9', padding: 12 }}>
-        <h3 style={{ marginTop: 0, color: overdueTasks.length > 0 ? '#b42318' : undefined }}>
-          Overdue Tasks ({overdueTasks.length})
-        </h3>
-        {overdueTasks.length === 0 ? (
-          <p style={{ color: '#16a34a' }}>No overdue tasks — great!</p>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">Task</th>
-                <th align="left">Priority</th>
-                <th align="left">Status</th>
-                <th align="left">Due Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overdueTasks.map((task) => (
-                <tr
-                  key={task.id}
-                  style={{
-                    background: task.priority === 'CRITICAL' ? '#fef2f2' : undefined,
-                    color: task.priority === 'CRITICAL' ? '#b42318' : undefined,
-                  }}
-                >
-                  <td>{task.title}</td>
-                  <td>{task.priority}</td>
-                  <td>{task.status}</td>
-                  <td>{task.dueDate ? formatDate(task.dueDate) : '—'}</td>
+      <div className="card">
+        <div className="card-header">
+          <h3 style={{ color: overdueTasks.length > 0 ? 'var(--destructive)' : undefined }}>
+            Overdue Tasks ({overdueTasks.length})
+          </h3>
+        </div>
+        <div className="card-content">
+          {overdueTasks.length === 0 ? (
+            <p style={{ color: 'var(--success)' }}>✓ No overdue tasks</p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+              </thead>
+              <tbody>
+                {overdueTasks.map((task) => (
+                  <tr key={task.id} className={task.priority === 'CRITICAL' ? 'row-critical' : ''}>
+                    <td>{task.title}</td>
+                    <td><span className={`badge badge-${task.priority === 'CRITICAL' ? 'danger' : task.priority === 'HIGH' ? 'warning' : 'default'}`}>{task.priority}</span></td>
+                    <td><span className="badge badge-outline">{task.status}</span></td>
+                    <td>{task.dueDate ? formatDate(task.dueDate) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
 
       {/* Widget 4: Recent Daily Reports */}
-      <section style={{ background: '#fff', border: '1px solid #d7dfd9', padding: 12 }}>
-        <h3 style={{ marginTop: 0 }}>Recent Daily Reports</h3>
-        {last5Reports.length === 0 ? (
-          <p style={{ color: '#555' }}>No reports yet</p>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">Date</th>
-                <th align="left">Activities</th>
-                <th align="left">Weather</th>
-              </tr>
-            </thead>
-            <tbody>
-              {last5Reports.map((report) => (
-                <tr key={report.id}>
-                  <td>{formatDate(report.reportDate)}</td>
-                  <td style={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {report.activities}
-                  </td>
-                  <td>{report.weather ?? '—'}</td>
+      <div className="card">
+        <div className="card-header"><h3>Recent Daily Reports</h3></div>
+        <div className="card-content">
+          {last5Reports.length === 0 ? (
+            <p style={{ color: 'var(--muted-foreground)' }}>No reports yet</p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Activities</th>
+                  <th>Weather</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+              </thead>
+              <tbody>
+                {last5Reports.map((report) => (
+                  <tr key={report.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(report.reportDate)}</td>
+                    <td style={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{report.activities}</td>
+                    <td>{report.weather ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

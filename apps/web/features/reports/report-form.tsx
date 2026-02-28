@@ -49,7 +49,6 @@ export function ReportForm({ projectId, onSaved }: ReportFormProps) {
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
         setError(undefined)
-
         if (!validate()) return
 
         setSaving(true)
@@ -57,7 +56,7 @@ export function ReportForm({ projectId, onSaved }: ReportFormProps) {
             const payload: CreateDailyReportPayload = {
                 projectId,
                 reportDate: form.reportDate,
-                authorId: 'current-user', // placeholder until auth session is wired
+                authorId: 'current-user',
                 activities: form.activities,
             }
             if (form.blockers.trim()) payload.blockers = form.blockers
@@ -67,22 +66,9 @@ export function ReportForm({ projectId, onSaved }: ReportFormProps) {
 
             const created = await createDailyReport(payload)
             onSaved(created)
-
-            // Reset form for next entry
-            setForm((prev) => ({
-                ...prev,
-                activities: '',
-                blockers: '',
-                notes: '',
-                weather: '',
-                manpower: '',
-            }))
+            setForm((prev) => ({ ...prev, activities: '', blockers: '', notes: '', weather: '', manpower: '' }))
         } catch (err) {
-            if (err instanceof ApiError) {
-                setError(err.message)
-            } else {
-                setError('Failed to submit daily report')
-            }
+            setError(err instanceof ApiError ? err.message : 'Failed to submit daily report')
         } finally {
             setSaving(false)
         }
@@ -97,47 +83,43 @@ export function ReportForm({ projectId, onSaved }: ReportFormProps) {
     }
 
     return (
-        <section style={{ background: '#fff', border: '1px solid #d7dfd9', padding: 12 }}>
-            <h3 style={{ marginTop: 0 }}>Submit Daily Report</h3>
-
-            {error ? <p style={{ color: '#b42318' }}>{error}</p> : null}
-
-            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 8 }}>
-                <label>
-                    Report Date *
-                    <input type="date" {...field('reportDate')} />
-                    {fieldErrors.reportDate ? <span style={{ color: '#b42318', fontSize: 12 }}>{fieldErrors.reportDate}</span> : null}
-                </label>
-
-                <label>
-                    Activities * (what was done today)
-                    <textarea rows={3} {...field('activities')} />
-                    {fieldErrors.activities ? <span style={{ color: '#b42318', fontSize: 12 }}>{fieldErrors.activities}</span> : null}
-                </label>
-
-                <label>
-                    Blockers (issues encountered)
-                    <textarea rows={2} {...field('blockers')} />
-                </label>
-
-                <label>
-                    Notes (additional info)
-                    <textarea rows={2} {...field('notes')} />
-                </label>
-
-                <label>
-                    Weather
-                    <input type="text" placeholder="e.g. Cerah, Hujan ringan" {...field('weather')} />
-                </label>
-
-                <label>
-                    Manpower (jumlah pekerja)
-                    <input type="number" min="0" {...field('manpower')} />
-                    {fieldErrors.manpower ? <span style={{ color: '#b42318', fontSize: 12 }}>{fieldErrors.manpower}</span> : null}
-                </label>
-
-                <button type="submit" disabled={saving}>{saving ? 'Submitting...' : 'Submit Report'}</button>
-            </form>
-        </section>
+        <div className="card">
+            <div className="card-header"><h3>Submit Daily Report</h3></div>
+            <div className="card-content">
+                {error ? <div className="alert alert-error" style={{ marginBottom: 12 }}>{error}</div> : null}
+                <form onSubmit={handleSubmit} className="stack-sm">
+                    <div className="form-field">
+                        <label className="form-label">Report Date *</label>
+                        <input className="input" type="date" {...field('reportDate')} />
+                        {fieldErrors.reportDate ? <span className="form-error">{fieldErrors.reportDate}</span> : null}
+                    </div>
+                    <div className="form-field">
+                        <label className="form-label">Activities * (what was done today)</label>
+                        <textarea className="textarea" rows={3} {...field('activities')} />
+                        {fieldErrors.activities ? <span className="form-error">{fieldErrors.activities}</span> : null}
+                    </div>
+                    <div className="form-field">
+                        <label className="form-label">Blockers (issues encountered)</label>
+                        <textarea className="textarea" rows={2} {...field('blockers')} />
+                    </div>
+                    <div className="form-field">
+                        <label className="form-label">Notes (additional info)</label>
+                        <textarea className="textarea" rows={2} {...field('notes')} />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <div className="form-field">
+                            <label className="form-label">Weather</label>
+                            <input className="input" type="text" placeholder="e.g. Cerah, Hujan ringan" {...field('weather')} />
+                        </div>
+                        <div className="form-field">
+                            <label className="form-label">Manpower</label>
+                            <input className="input" type="number" min="0" {...field('manpower')} />
+                            {fieldErrors.manpower ? <span className="form-error">{fieldErrors.manpower}</span> : null}
+                        </div>
+                    </div>
+                    <div><button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Submitting...' : 'Submit Report'}</button></div>
+                </form>
+            </div>
+        </div>
     )
 }
