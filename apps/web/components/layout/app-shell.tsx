@@ -55,6 +55,27 @@ function Sidebar() {
           )
         })}
       </nav>
+
+      <div className="mt-auto p-4 border-t border-white/[0.08]">
+        <div className="flex items-center gap-3 mb-4 px-2">
+          <div className="h-8 w-8 rounded-full bg-sidebar-primary/20 flex items-center justify-center text-sidebar-primary text-sm font-bold">
+            U
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">System User</span>
+            <span className="text-xs text-sidebar-foreground/50">user@inpro.local</span>
+          </div>
+        </div>
+
+        <form action="/auth/logout" method="POST">
+          <button
+            type="submit"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md text-sidebar-foreground/70 hover:bg-white/[0.06] hover:text-red-400 transition-colors"
+          >
+            Sign Out
+          </button>
+        </form>
+      </div>
     </aside>
   )
 }

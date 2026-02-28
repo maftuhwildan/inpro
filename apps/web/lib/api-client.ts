@@ -1,3 +1,5 @@
+import { createClient } from './supabase/client'
+
 export type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED'
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE'
@@ -100,6 +102,31 @@ export class ApiError extends Error {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001'
 
+async function getAuthHeaders(existingHeaders?: HeadersInit): Promise<HeadersInit> {
+  const headers = new Headers(existingHeaders)
+  if (!headers.has('content-type')) {
+    headers.set('content-type', 'application/json')
+  }
+
+  // Try to get token from Supabase client
+  try {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      headers.set('Authorization', `Bearer ${session.access_token}`)
+    }
+  } catch (e) {
+    // Ignore error if not in a browser env where this client works
+  }
+
+  return headers
+}
+
+async function fetchApi(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const headers = await getAuthHeaders(init?.headers)
+  return fetch(input, { ...init, headers })
+}
+
 async function parseResponse<T>(res: Response): Promise<T> {
   const text = await res.text()
   const payload = text ? JSON.parse(text) : null
@@ -117,23 +144,21 @@ function createIdempotencyKey(prefix: string): string {
 }
 
 export async function getProjects(): Promise<ProjectDto[]> {
-  const res = await fetch(`${API_BASE_URL}/projects`, { cache: 'no-store' })
+  const res = await fetchApi(`${API_BASE_URL}/projects`, { cache: 'no-store' })
   return parseResponse<ProjectDto[]>(res)
 }
 
 export async function createProject(payload: CreateProjectPayload): Promise<ProjectDto> {
-  const res = await fetch(`${API_BASE_URL}/projects`, {
+  const res = await fetchApi(`${API_BASE_URL}/projects`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload),
   })
   return parseResponse<ProjectDto>(res)
 }
 
 export async function updateProject(id: string, payload: UpdateProjectPayload): Promise<ProjectDto> {
-  const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
+  const res = await fetchApi(`${API_BASE_URL}/projects/${id}`, {
     method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload),
   })
   return parseResponse<ProjectDto>(res)
@@ -141,20 +166,19 @@ export async function updateProject(id: string, payload: UpdateProjectPayload): 
 
 export async function getTasks(projectId?: string): Promise<TaskDto[]> {
   const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
-  const res = await fetch(`${API_BASE_URL}/tasks${query}`, { cache: 'no-store' })
+  const res = await fetchApi(`${API_BASE_URL}/tasks${query}`, { cache: 'no-store' })
   return parseResponse<TaskDto[]>(res)
 }
 
 export async function getOverdueTasks(): Promise<TaskDto[]> {
-  const res = await fetch(`${API_BASE_URL}/tasks/overdue/list`, { cache: 'no-store' })
+  const res = await fetchApi(`${API_BASE_URL}/tasks/overdue/list`, { cache: 'no-store' })
   return parseResponse<TaskDto[]>(res)
 }
 
 export async function createTask(payload: CreateTaskPayload): Promise<TaskDto> {
-  const res = await fetch(`${API_BASE_URL}/tasks`, {
+  const res = await fetchApi(`${API_BASE_URL}/tasks`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json',
       'x-idempotency-key': createIdempotencyKey('task-create'),
     },
     body: JSON.stringify(payload),
@@ -163,10 +187,9 @@ export async function createTask(payload: CreateTaskPayload): Promise<TaskDto> {
 }
 
 export async function updateTask(id: string, payload: UpdateTaskPayload): Promise<TaskDto> {
-  const res = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+  const res = await fetchApi(`${API_BASE_URL}/tasks/${id}`, {
     method: 'PATCH',
     headers: {
-      'content-type': 'application/json',
       'x-idempotency-key': createIdempotencyKey('task-update'),
     },
     body: JSON.stringify(payload),
@@ -176,15 +199,14 @@ export async function updateTask(id: string, payload: UpdateTaskPayload): Promis
 
 export async function getDailyReports(projectId?: string): Promise<DailyReportDto[]> {
   const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
-  const res = await fetch(`${API_BASE_URL}/daily-reports${query}`, { cache: 'no-store' })
+  const res = await fetchApi(`${API_BASE_URL}/daily-reports${query}`, { cache: 'no-store' })
   return parseResponse<DailyReportDto[]>(res)
 }
 
 export async function createDailyReport(payload: CreateDailyReportPayload): Promise<DailyReportDto> {
-  const res = await fetch(`${API_BASE_URL}/daily-reports`, {
+  const res = await fetchApi(`${API_BASE_URL}/daily-reports`, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json',
       'x-idempotency-key': createIdempotencyKey('report-create'),
     },
     body: JSON.stringify(payload),
