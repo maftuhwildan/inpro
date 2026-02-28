@@ -65,6 +65,31 @@ export type UpdateTaskPayload = {
   expectedUpdatedAt?: string
 }
 
+export type DailyReportDto = {
+  id: string
+  projectId: string
+  reportDate: string
+  authorId: string
+  activities: string
+  blockers?: string | null
+  notes?: string | null
+  attachmentsRef?: string | null
+  weather?: string | null
+  manpower?: number | null
+  createdAt: string
+}
+
+export type CreateDailyReportPayload = {
+  projectId: string
+  reportDate: string
+  authorId: string
+  activities: string
+  blockers?: string
+  notes?: string
+  weather?: string
+  manpower?: number
+}
+
 export class ApiError extends Error {
   status: number
   constructor(message: string, status: number) {
@@ -148,3 +173,22 @@ export async function updateTask(id: string, payload: UpdateTaskPayload): Promis
   })
   return parseResponse<TaskDto>(res)
 }
+
+export async function getDailyReports(projectId?: string): Promise<DailyReportDto[]> {
+  const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
+  const res = await fetch(`${API_BASE_URL}/daily-reports${query}`, { cache: 'no-store' })
+  return parseResponse<DailyReportDto[]>(res)
+}
+
+export async function createDailyReport(payload: CreateDailyReportPayload): Promise<DailyReportDto> {
+  const res = await fetch(`${API_BASE_URL}/daily-reports`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-idempotency-key': createIdempotencyKey('report-create'),
+    },
+    body: JSON.stringify(payload),
+  })
+  return parseResponse<DailyReportDto>(res)
+}
+
