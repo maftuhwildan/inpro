@@ -50,6 +50,8 @@
     "verify:api:bootstrap": "npm.cmd run test:api:modules && npm.cmd run test:api:nest-install",
     "verify:mvp": "npm.cmd run test:workspace && npm.cmd run test:api:modules && npm.cmd run test:api:nest-install && npm.cmd run test:api:auth && npm.cmd run test:api:rbac && npm.cmd run test:api:projects && npm.cmd run test:api:tasks && npm.cmd run test:api:daily-reports && npm.cmd run test:api:audit && npm.cmd run test:api:concurrency && npm.cmd run test:api:idempotency && npm.cmd run test:contracts && npm.cmd run test:web:foundation && npm.cmd run test:web:projects && npm.cmd run test:web:tasks && npm.cmd run test:web:reports && npm.cmd run test:web:dashboard && npm.cmd run test:api:logging && npm.cmd run test:web:e2e && npm.cmd run test:docs && pnpm.cmd --filter @inpro/api run build",
     "test:api:integration": "pnpm.cmd --filter @inpro/api run test:integration",
-    "verify:task21": "npm.cmd run test:api:integration"
+    "verify:task21": "npm.cmd run test:api:integration",
+    "test:api:db-integration": "pnpm.cmd --filter @inpro/api run test:db-integration",
+    "verify:task22": "npm.cmd run test:api:db-integration"
   }
 }
