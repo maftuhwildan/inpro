@@ -1,6 +1,6 @@
-import { AppShell } from '../../../components/layout/app-shell'
-import { ApiError, getOverdueTasks, getProjects, getTasks } from '../../../lib/api-client'
-import { TaskBoard } from '../../../features/tasks/task-board'
+import { AppShell } from '@/components/layout/app-shell'
+import { ApiError, getOverdueTasks, getProjects, getTasks } from '@/lib/api-client'
+import { TaskBoard } from '@/features/tasks/task-board'
 
 export default async function TasksPage() {
   let loadError: string | undefined
@@ -28,7 +28,7 @@ export default async function TasksPage() {
 
   return (
     <AppShell>
-      <h1>Tasks</h1>
+      <h1 className="text-3xl font-bold tracking-tight mb-6">Tasks</h1>
       <TaskBoard initialTasks={tasks} initialOverdueTasks={overdueTasks} projects={projects} loadError={loadError} />
     </AppShell>
   )

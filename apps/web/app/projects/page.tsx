@@ -1,6 +1,6 @@
-import { AppShell } from '../../../components/layout/app-shell'
-import { ApiError, getProjects } from '../../../lib/api-client'
-import { ProjectListFeature } from '../../../features/projects/project-list'
+import { AppShell } from '@/components/layout/app-shell'
+import { ApiError, getProjects } from '@/lib/api-client'
+import { ProjectListFeature } from '@/features/projects/project-list'
 
 export default async function ProjectsPage() {
   let loadError: string | undefined
@@ -18,7 +18,7 @@ export default async function ProjectsPage() {
 
   return (
     <AppShell>
-      <h1>Projects</h1>
+      <h1 className="text-3xl font-bold tracking-tight mb-6">Projects</h1>
       <ProjectListFeature initialProjects={projects} loadError={loadError} />
     </AppShell>
   )

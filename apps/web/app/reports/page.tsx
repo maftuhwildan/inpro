@@ -1,6 +1,6 @@
-import { AppShell } from '../../../components/layout/app-shell'
-import { ApiError, getProjects } from '../../../lib/api-client'
-import { ReportListFeature } from '../../../features/reports/report-list'
+import { AppShell } from '@/components/layout/app-shell'
+import { ApiError, getProjects } from '@/lib/api-client'
+import { ReportListFeature } from '@/features/reports/report-list'
 
 export default async function ReportsPage() {
   let loadError: string | undefined
@@ -18,7 +18,7 @@ export default async function ReportsPage() {
 
   return (
     <AppShell>
-      <h1>Daily Reports</h1>
+      <h1 className="text-3xl font-bold tracking-tight mb-6">Daily Reports</h1>
       <ReportListFeature projects={projects} loadError={loadError} />
     </AppShell>
   )

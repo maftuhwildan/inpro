@@ -1,6 +1,6 @@
-import { AppShell } from '../../../components/layout/app-shell'
-import { ApiError, getDailyReports, getOverdueTasks, getProjects } from '../../../lib/api-client'
-import { DashboardKpisFeature } from '../../../features/dashboard/dashboard-kpis'
+import { AppShell } from '@/components/layout/app-shell'
+import { ApiError, getDailyReports, getOverdueTasks, getProjects } from '@/lib/api-client'
+import { DashboardKpisFeature } from '@/features/dashboard/dashboard-kpis'
 
 export default async function DashboardPage() {
   let loadError: string | undefined
@@ -28,7 +28,7 @@ export default async function DashboardPage() {
 
   return (
     <AppShell>
-      <h1>Operational Dashboard</h1>
+      <h1 className="text-3xl font-bold tracking-tight mb-6">Operational Dashboard</h1>
       <DashboardKpisFeature
         projects={projects}
         overdueTasks={overdueTasks}
