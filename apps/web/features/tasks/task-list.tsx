@@ -1,3 +1,1 @@
-export function TaskListFeature() {
-  return null
-}
+export { TaskBoard as TaskListFeature } from './task-board'
