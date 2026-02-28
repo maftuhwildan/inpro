@@ -1,0 +1,14 @@
+:root {
+  --background: #f7f8f5;
+  --foreground: #111827;
+  --card: #ffffff;
+  --accent: #1f7a4c;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Geist, ui-sans-serif, system-ui;
+  background: radial-gradient(circle at 15% 15%, #e4f0e8 0%, var(--background) 45%);
+  color: var(--foreground);
+}
