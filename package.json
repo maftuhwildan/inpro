@@ -54,6 +54,8 @@
     "test:api:db-integration": "pnpm.cmd --filter @inpro/api run test:db-integration",
     "verify:task22": "npm.cmd run test:api:db-integration",
     "test:web:projects-integration": "node apps/web/tests/projects-integration-check.mjs",
-    "verify:task23": "npm.cmd run test:web:projects-integration && npm.cmd run test:web:projects"
+    "verify:task23": "npm.cmd run test:web:projects-integration && npm.cmd run test:web:projects",
+    "test:web:tasks-integration": "node apps/web/tests/tasks-integration-check.mjs",
+    "verify:task24": "npm.cmd run test:web:tasks-integration && npm.cmd run test:web:tasks"
   }
 }

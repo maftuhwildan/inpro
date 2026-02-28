@@ -2,6 +2,9 @@
 
 import { useMemo } from 'react'
 import type { DailyReportDto, ProjectDto, ProjectStatus, TaskDto } from '../../lib/api-client'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 type DashboardKpisProps = {
   projects: ProjectDto[]
@@ -10,12 +13,19 @@ type DashboardKpisProps = {
   loadError?: string
 }
 
-const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; badge: string }> = {
-  PLANNING: { label: 'Planning', color: '#71717a', badge: 'badge-default' },
-  ACTIVE: { label: 'Active', color: '#16a34a', badge: 'badge-success' },
-  ON_HOLD: { label: 'On Hold', color: '#d97706', badge: 'badge-warning' },
-  COMPLETED: { label: 'Completed', color: '#2563eb', badge: 'badge-info' },
-  CANCELLED: { label: 'Cancelled', color: '#dc2626', badge: 'badge-danger' },
+const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string; badge: 'default' | 'success' | 'warning' | 'info' | 'destructive' }> = {
+  PLANNING: { label: 'Planning', color: 'border-l-zinc-400', badge: 'default' },
+  ACTIVE: { label: 'Active', color: 'border-l-green-500', badge: 'success' },
+  ON_HOLD: { label: 'On Hold', color: 'border-l-amber-500', badge: 'warning' },
+  COMPLETED: { label: 'Completed', color: 'border-l-blue-500', badge: 'info' },
+  CANCELLED: { label: 'Cancelled', color: 'border-l-red-500', badge: 'destructive' },
+}
+
+const PRIORITY_BADGE: Record<string, 'default' | 'secondary' | 'warning' | 'destructive'> = {
+  LOW: 'secondary',
+  MEDIUM: 'default',
+  HIGH: 'warning',
+  CRITICAL: 'destructive',
 }
 
 export function DashboardKpisFeature({ projects, overdueTasks, recentReports, loadError }: DashboardKpisProps) {
@@ -35,114 +45,114 @@ export function DashboardKpisFeature({ projects, overdueTasks, recentReports, lo
   }
 
   return (
-    <div className="stack-lg">
-      {loadError ? <div className="alert alert-error">{loadError}</div> : null}
+    <div className="space-y-6">
+      {loadError ? <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{loadError}</div> : null}
 
       {/* Widget 1: Project Status Cards */}
       <section>
-        <h2 style={{ marginBottom: 12 }}>Projects by Status</h2>
-        <div className="grid-cards">
+        <h2 className="text-lg font-semibold mb-3">Projects by Status</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {(Object.keys(STATUS_CONFIG) as ProjectStatus[]).map((status) => (
-            <div key={status} className="card kpi-card" style={{ borderLeftColor: STATUS_CONFIG[status].color }}>
-              <div className="card-content" style={{ padding: '16px 20px' }}>
-                <div className="kpi-value">{statusCounts[status] ?? 0}</div>
-                <div className="kpi-label">{STATUS_CONFIG[status].label}</div>
-              </div>
-            </div>
+            <Card key={status} className={`border-l-4 ${STATUS_CONFIG[status].color}`}>
+              <CardContent className="p-4">
+                <div className="text-3xl font-bold">{statusCounts[status] ?? 0}</div>
+                <div className="text-xs text-muted-foreground mt-1">{STATUS_CONFIG[status].label}</div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>
 
       {/* Widget 2: Project Progress */}
-      <div className="card">
-        <div className="card-header"><h3>Project Progress</h3></div>
-        <div className="card-content">
+      <Card>
+        <CardHeader><CardTitle>Project Progress</CardTitle></CardHeader>
+        <CardContent>
           {projects.length === 0 ? (
-            <p style={{ color: 'var(--muted-foreground)' }}>No projects yet</p>
+            <p className="text-muted-foreground">No projects yet</p>
           ) : (
-            <div className="stack-sm">
+            <div className="space-y-3">
               {projects.map((project) => (
-                <div key={project.id} style={{ display: 'grid', gridTemplateColumns: '1fr 50px', gap: 8, alignItems: 'center' }}>
+                <div key={project.id} className="grid grid-cols-[1fr_50px] gap-3 items-center">
                   <div>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{project.name}</div>
-                    <div className="progress-track" style={{ marginTop: 4 }}>
+                    <div className="text-sm font-medium">{project.name}</div>
+                    <div className="h-2 rounded-full bg-secondary mt-1 overflow-hidden">
                       <div
-                        className={`progress-fill ${project.progress === 100 ? 'progress-fill-primary' : 'progress-fill-info'}`}
+                        className={`h-full rounded-full transition-all ${project.progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
                         style={{ width: `${project.progress}%` }}
                       />
                     </div>
                   </div>
-                  <div style={{ fontSize: '0.8125rem', textAlign: 'right', color: 'var(--muted-foreground)' }}>{project.progress}%</div>
+                  <div className="text-xs text-right text-muted-foreground">{project.progress}%</div>
                 </div>
               ))}
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Widget 3: Overdue Tasks */}
-      <div className="card">
-        <div className="card-header">
-          <h3 style={{ color: overdueTasks.length > 0 ? 'var(--destructive)' : undefined }}>
+      <Card>
+        <CardHeader>
+          <CardTitle className={overdueTasks.length > 0 ? 'text-destructive' : ''}>
             Overdue Tasks ({overdueTasks.length})
-          </h3>
-        </div>
-        <div className="card-content">
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           {overdueTasks.length === 0 ? (
-            <p style={{ color: 'var(--success)' }}>✓ No overdue tasks</p>
+            <p className="text-green-600">✓ No overdue tasks</p>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Task</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Due Date</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Task</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Due Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {overdueTasks.map((task) => (
-                  <tr key={task.id} className={task.priority === 'CRITICAL' ? 'row-critical' : ''}>
-                    <td>{task.title}</td>
-                    <td><span className={`badge badge-${task.priority === 'CRITICAL' ? 'danger' : task.priority === 'HIGH' ? 'warning' : 'default'}`}>{task.priority}</span></td>
-                    <td><span className="badge badge-outline">{task.status}</span></td>
-                    <td>{task.dueDate ? formatDate(task.dueDate) : '—'}</td>
-                  </tr>
+                  <TableRow key={task.id} className={task.priority === 'CRITICAL' ? 'bg-red-50' : ''}>
+                    <TableCell className="font-medium">{task.title}</TableCell>
+                    <TableCell><Badge variant={PRIORITY_BADGE[task.priority] ?? 'secondary'}>{task.priority}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{task.status}</Badge></TableCell>
+                    <TableCell>{task.dueDate ? formatDate(task.dueDate) : '—'}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Widget 4: Recent Daily Reports */}
-      <div className="card">
-        <div className="card-header"><h3>Recent Daily Reports</h3></div>
-        <div className="card-content">
+      <Card>
+        <CardHeader><CardTitle>Recent Daily Reports</CardTitle></CardHeader>
+        <CardContent>
           {last5Reports.length === 0 ? (
-            <p style={{ color: 'var(--muted-foreground)' }}>No reports yet</p>
+            <p className="text-muted-foreground">No reports yet</p>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Activities</th>
-                  <th>Weather</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Activities</TableHead>
+                  <TableHead>Weather</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {last5Reports.map((report) => (
-                  <tr key={report.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(report.reportDate)}</td>
-                    <td style={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{report.activities}</td>
-                    <td>{report.weather ?? '—'}</td>
-                  </tr>
+                  <TableRow key={report.id}>
+                    <TableCell className="whitespace-nowrap">{formatDate(report.reportDate)}</TableCell>
+                    <TableCell className="max-w-[400px] truncate">{report.activities}</TableCell>
+                    <TableCell>{report.weather ?? '—'}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

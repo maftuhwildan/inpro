@@ -2,20 +2,12 @@
 
 import { useState } from 'react'
 import { ApiError, createDailyReport, type CreateDailyReportPayload } from '../../lib/api-client'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input, Textarea, Label } from '@/components/ui/input'
 
-type ReportFormProps = {
-    projectId: string
-    onSaved: (report: any) => void
-}
-
-type FormState = {
-    reportDate: string
-    activities: string
-    blockers: string
-    notes: string
-    weather: string
-    manpower: string
-}
+type ReportFormProps = { projectId: string; onSaved: (report: any) => void }
+type FormState = { reportDate: string; activities: string; blockers: string; notes: string; weather: string; manpower: string }
 
 function todayString(): string {
     const d = new Date()
@@ -23,103 +15,51 @@ function todayString(): string {
 }
 
 export function ReportForm({ projectId, onSaved }: ReportFormProps) {
-    const [form, setForm] = useState<FormState>({
-        reportDate: todayString(),
-        activities: '',
-        blockers: '',
-        notes: '',
-        weather: '',
-        manpower: '',
-    })
+    const [form, setForm] = useState<FormState>({ reportDate: todayString(), activities: '', blockers: '', notes: '', weather: '', manpower: '' })
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | undefined>()
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
     function validate(): boolean {
-        const errors: Record<string, string> = {}
-        if (!form.reportDate) errors.reportDate = 'Report date is required'
-        if (!form.activities.trim()) errors.activities = 'Activities is required'
-        if (form.manpower && (isNaN(Number(form.manpower)) || Number(form.manpower) < 0)) {
-            errors.manpower = 'Manpower must be a non-negative number'
-        }
-        setFieldErrors(errors)
-        return Object.keys(errors).length === 0
+        const e: Record<string, string> = {}
+        if (!form.reportDate) e.reportDate = 'Required'
+        if (!form.activities.trim()) e.activities = 'Required'
+        if (form.manpower && (isNaN(Number(form.manpower)) || Number(form.manpower) < 0)) e.manpower = 'Must be ≥ 0'
+        setFieldErrors(e); return Object.keys(e).length === 0
     }
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-        event.preventDefault()
-        setError(undefined)
+        event.preventDefault(); setError(undefined)
         if (!validate()) return
-
         setSaving(true)
         try {
-            const payload: CreateDailyReportPayload = {
-                projectId,
-                reportDate: form.reportDate,
-                authorId: 'current-user',
-                activities: form.activities,
-            }
+            const payload: CreateDailyReportPayload = { projectId, reportDate: form.reportDate, authorId: 'current-user', activities: form.activities }
             if (form.blockers.trim()) payload.blockers = form.blockers
             if (form.notes.trim()) payload.notes = form.notes
             if (form.weather.trim()) payload.weather = form.weather
             if (form.manpower) payload.manpower = Number(form.manpower)
-
-            const created = await createDailyReport(payload)
-            onSaved(created)
+            onSaved(await createDailyReport(payload))
             setForm((prev) => ({ ...prev, activities: '', blockers: '', notes: '', weather: '', manpower: '' }))
-        } catch (err) {
-            setError(err instanceof ApiError ? err.message : 'Failed to submit daily report')
-        } finally {
-            setSaving(false)
-        }
-    }
-
-    function field(name: keyof FormState) {
-        return {
-            value: form[name],
-            onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-                setForm((s) => ({ ...s, [name]: e.target.value })),
-        }
+        } catch (err) { setError(err instanceof ApiError ? err.message : 'Failed') } finally { setSaving(false) }
     }
 
     return (
-        <div className="card">
-            <div className="card-header"><h3>Submit Daily Report</h3></div>
-            <div className="card-content">
-                {error ? <div className="alert alert-error" style={{ marginBottom: 12 }}>{error}</div> : null}
-                <form onSubmit={handleSubmit} className="stack-sm">
-                    <div className="form-field">
-                        <label className="form-label">Report Date *</label>
-                        <input className="input" type="date" {...field('reportDate')} />
-                        {fieldErrors.reportDate ? <span className="form-error">{fieldErrors.reportDate}</span> : null}
+        <Card>
+            <CardHeader><CardTitle>Submit Daily Report</CardTitle></CardHeader>
+            <CardContent>
+                {error ? <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive mb-3">{error}</div> : null}
+                <form onSubmit={handleSubmit} className="space-y-3">
+                    <div className="space-y-1"><Label>Report Date *</Label><Input type="date" value={form.reportDate} onChange={(e) => setForm((s) => ({ ...s, reportDate: e.target.value }))} />{fieldErrors.reportDate ? <p className="text-xs text-destructive">{fieldErrors.reportDate}</p> : null}</div>
+                    <div className="space-y-1"><Label>Activities *</Label><Textarea rows={3} value={form.activities} onChange={(e) => setForm((s) => ({ ...s, activities: e.target.value }))} />{fieldErrors.activities ? <p className="text-xs text-destructive">{fieldErrors.activities}</p> : null}</div>
+                    <div className="space-y-1"><Label>Blockers</Label><Textarea rows={2} value={form.blockers} onChange={(e) => setForm((s) => ({ ...s, blockers: e.target.value }))} /></div>
+                    <div className="space-y-1"><Label>Notes</Label><Textarea rows={2} value={form.notes} onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))} /></div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1"><Label>Weather</Label><Input placeholder="e.g. Cerah, Hujan ringan" value={form.weather} onChange={(e) => setForm((s) => ({ ...s, weather: e.target.value }))} /></div>
+                        <div className="space-y-1"><Label>Manpower</Label><Input type="number" min="0" value={form.manpower} onChange={(e) => setForm((s) => ({ ...s, manpower: e.target.value }))} />{fieldErrors.manpower ? <p className="text-xs text-destructive">{fieldErrors.manpower}</p> : null}</div>
                     </div>
-                    <div className="form-field">
-                        <label className="form-label">Activities * (what was done today)</label>
-                        <textarea className="textarea" rows={3} {...field('activities')} />
-                        {fieldErrors.activities ? <span className="form-error">{fieldErrors.activities}</span> : null}
-                    </div>
-                    <div className="form-field">
-                        <label className="form-label">Blockers (issues encountered)</label>
-                        <textarea className="textarea" rows={2} {...field('blockers')} />
-                    </div>
-                    <div className="form-field">
-                        <label className="form-label">Notes (additional info)</label>
-                        <textarea className="textarea" rows={2} {...field('notes')} />
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        <div className="form-field">
-                            <label className="form-label">Weather</label>
-                            <input className="input" type="text" placeholder="e.g. Cerah, Hujan ringan" {...field('weather')} />
-                        </div>
-                        <div className="form-field">
-                            <label className="form-label">Manpower</label>
-                            <input className="input" type="number" min="0" {...field('manpower')} />
-                            {fieldErrors.manpower ? <span className="form-error">{fieldErrors.manpower}</span> : null}
-                        </div>
-                    </div>
-                    <div><button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Submitting...' : 'Submit Report'}</button></div>
+                    <Button type="submit" disabled={saving}>{saving ? 'Submitting...' : 'Submit Report'}</Button>
                 </form>
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     )
 }

@@ -1,14 +1,12 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import {
-  ApiError,
-  createTask,
-  type ProjectDto,
-  type TaskDto,
-  type TaskStatus,
-  updateTask,
-} from '../../lib/api-client'
+import { ApiError, createTask, type ProjectDto, type TaskDto, type TaskStatus, updateTask } from '../../lib/api-client'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input, Select, Label } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 type TaskBoardProps = {
   initialTasks: TaskDto[]
@@ -17,24 +15,11 @@ type TaskBoardProps = {
   loadError?: string
 }
 
-type CreateTaskFormState = {
-  projectId: string
-  title: string
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+const PRIORITY_BADGE: Record<string, 'default' | 'secondary' | 'warning' | 'destructive'> = {
+  LOW: 'secondary', MEDIUM: 'default', HIGH: 'warning', CRITICAL: 'destructive',
 }
-
-const PRIORITY_BADGE: Record<string, string> = {
-  LOW: 'badge-default',
-  MEDIUM: 'badge-info',
-  HIGH: 'badge-warning',
-  CRITICAL: 'badge-danger',
-}
-
-const STATUS_BADGE: Record<string, string> = {
-  TODO: 'badge-outline',
-  IN_PROGRESS: 'badge-info',
-  BLOCKED: 'badge-danger',
-  DONE: 'badge-success',
+const STATUS_BADGE: Record<string, 'outline' | 'info' | 'destructive' | 'success'> = {
+  TODO: 'outline', IN_PROGRESS: 'info', BLOCKED: 'destructive', DONE: 'success',
 }
 
 export function TaskBoard({ initialTasks, initialOverdueTasks, projects, loadError }: TaskBoardProps) {
@@ -42,148 +27,95 @@ export function TaskBoard({ initialTasks, initialOverdueTasks, projects, loadErr
   const [overdueTasks, setOverdueTasks] = useState<TaskDto[]>(initialOverdueTasks)
   const [error, setError] = useState<string | undefined>(loadError)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState<CreateTaskFormState>({
-    projectId: projects[0]?.id ?? '',
-    title: '',
-    priority: 'MEDIUM',
-  })
+  const [form, setForm] = useState({ projectId: projects[0]?.id ?? '', title: '', priority: 'MEDIUM' as const })
 
-  const editableTasks = useMemo(() => tasks.filter((task) => task.status !== 'DONE'), [tasks])
+  const editableTasks = useMemo(() => tasks.filter((t) => t.status !== 'DONE'), [tasks])
 
-  async function handleCreateTask(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setError(undefined)
-    if (!form.projectId || !form.title.trim()) {
-      setError('Project and title are required')
-      return
-    }
+    if (!form.projectId || !form.title.trim()) { setError('Project and title are required'); return }
     setSaving(true)
     try {
       const created = await createTask({ projectId: form.projectId, title: form.title, priority: form.priority })
       setTasks((prev) => [created, ...prev])
       setForm((prev) => ({ ...prev, title: '' }))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create task')
-    } finally {
-      setSaving(false)
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed') } finally { setSaving(false) }
   }
 
   async function moveStatus(task: TaskDto, status: TaskStatus) {
     setError(undefined)
     try {
       const updated = await updateTask(task.id, { status, expectedUpdatedAt: task.updatedAt })
-      setTasks((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
-      setOverdueTasks((prev) => prev.filter((item) => item.id !== updated.id))
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+      setOverdueTasks((prev) => prev.filter((t) => t.id !== updated.id))
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setError('Task changed by another user. Refresh and retry.')
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to update task')
-      }
+      if (err instanceof ApiError && err.status === 409) setError('Task changed by another user. Refresh.')
+      else setError(err instanceof Error ? err.message : 'Failed')
     }
   }
 
   return (
-    <div className="stack">
-      {error ? <div className="alert alert-error">{error}</div> : null}
+    <div className="space-y-4">
+      {error ? <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div> : null}
 
-      {/* Create Task Form */}
-      <div className="card">
-        <div className="card-header"><h3>Create Task</h3></div>
-        <div className="card-content">
-          <form onSubmit={handleCreateTask} className="stack-sm">
-            <div className="form-field">
-              <label className="form-label">Project</label>
-              <select className="select" value={form.projectId} onChange={(e) => setForm((s) => ({ ...s, projectId: e.target.value }))}>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>{project.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-field">
-              <label className="form-label">Title</label>
-              <input className="input" value={form.title} onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))} placeholder="Task title..." />
-            </div>
-            <div className="form-field">
-              <label className="form-label">Priority</label>
-              <select className="select" value={form.priority} onChange={(e) => setForm((s) => ({ ...s, priority: e.target.value as CreateTaskFormState['priority'] }))}>
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="CRITICAL">Critical</option>
-              </select>
-            </div>
-            <div><button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Create Task'}</button></div>
+      <Card>
+        <CardHeader><CardTitle>Create Task</CardTitle></CardHeader>
+        <CardContent>
+          <form onSubmit={handleCreate} className="space-y-3">
+            <div className="space-y-1"><Label>Project</Label><Select value={form.projectId} onChange={(e) => setForm((s) => ({ ...s, projectId: e.target.value }))}>{projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></div>
+            <div className="space-y-1"><Label>Title</Label><Input value={form.title} onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))} placeholder="Task title..." /></div>
+            <div className="space-y-1"><Label>Priority</Label><Select value={form.priority} onChange={(e) => setForm((s) => ({ ...s, priority: e.target.value as any }))}><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="CRITICAL">Critical</option></Select></div>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Create Task'}</Button>
           </form>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Overdue Tasks */}
-      <div className="card">
-        <div className="card-header">
-          <h3 style={{ color: overdueTasks.length > 0 ? 'var(--destructive)' : undefined }}>
-            ⚠ Overdue Tasks ({overdueTasks.length})
-          </h3>
-        </div>
-        <div className="card-content">
-          {overdueTasks.length === 0 ? (
-            <p style={{ color: 'var(--success)' }}>✓ No overdue tasks</p>
-          ) : (
-            <ul className="stack-sm" style={{ listStyle: 'none', padding: 0 }}>
-              {overdueTasks.map((task) => (
-                <li key={task.id} className="row-between" style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                  <span>{task.title}</span>
-                  <span className={`badge ${PRIORITY_BADGE[task.priority] ?? 'badge-default'}`}>{task.priority}</span>
-                </li>
-              ))}
-            </ul>
+      <Card>
+        <CardHeader><CardTitle className={overdueTasks.length > 0 ? 'text-destructive' : ''}>⚠ Overdue Tasks ({overdueTasks.length})</CardTitle></CardHeader>
+        <CardContent>
+          {overdueTasks.length === 0 ? <p className="text-green-600">✓ No overdue tasks</p> : (
+            <div className="space-y-2">{overdueTasks.map((t) => (
+              <div key={t.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                <span className="text-sm">{t.title}</span>
+                <Badge variant={PRIORITY_BADGE[t.priority] ?? 'secondary'}>{t.priority}</Badge>
+              </div>
+            ))}</div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Task List */}
-      <div className="card">
-        <div className="card-header">
-          <h3>Task List</h3>
-          <span className="badge badge-outline">{editableTasks.length} active</span>
-        </div>
-        <div className="card-content" style={{ padding: 0 }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Project</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Task List</CardTitle>
+          <Badge variant="outline">{editableTasks.length} active</Badge>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Project</TableHead><TableHead>Priority</TableHead><TableHead>Status</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+            <TableBody>
               {tasks.map((task) => {
-                const projectName = projects.find((project) => project.id === task.projectId)?.name ?? task.projectId
+                const pName = projects.find((p) => p.id === task.projectId)?.name ?? task.projectId
                 return (
-                  <tr key={task.id}>
-                    <td style={{ fontWeight: 500 }}>{task.title}</td>
-                    <td style={{ color: 'var(--muted-foreground)' }}>{projectName}</td>
-                    <td><span className={`badge ${PRIORITY_BADGE[task.priority] ?? 'badge-default'}`}>{task.priority}</span></td>
-                    <td><span className={`badge ${STATUS_BADGE[task.status] ?? 'badge-outline'}`}>{task.status}</span></td>
-                    <td>
-                      <div className="row">
-                        {task.status !== 'IN_PROGRESS' ? <button className="btn btn-outline btn-sm" onClick={() => moveStatus(task, 'IN_PROGRESS')}>Start</button> : null}
-                        {task.status !== 'DONE' ? <button className="btn btn-primary btn-sm" onClick={() => moveStatus(task, 'DONE')}>Done</button> : null}
+                  <TableRow key={task.id}>
+                    <TableCell className="font-medium">{task.title}</TableCell>
+                    <TableCell className="text-muted-foreground">{pName}</TableCell>
+                    <TableCell><Badge variant={PRIORITY_BADGE[task.priority] ?? 'secondary'}>{task.priority}</Badge></TableCell>
+                    <TableCell><Badge variant={STATUS_BADGE[task.status] ?? 'outline'}>{task.status}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {task.status !== 'IN_PROGRESS' ? <Button variant="outline" size="sm" onClick={() => moveStatus(task, 'IN_PROGRESS')}>Start</Button> : null}
+                        {task.status !== 'DONE' ? <Button size="sm" onClick={() => moveStatus(task, 'DONE')}>Done</Button> : null}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-              {tasks.length === 0 ? (
-                <tr><td colSpan={5} className="data-table-empty">No tasks yet</td></tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              {tasks.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No tasks yet</TableCell></TableRow> : null}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }
